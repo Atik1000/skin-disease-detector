@@ -12,6 +12,7 @@ import { PhotoCamera, Upload } from '@mui/icons-material';
 import ImageUpload from '../components/ImageUpload';
 import CameraCapture from '../components/CameraCapture';
 import ResultsDisplay from '../components/ResultsDisplay';
+import { uploadImage } from '../services/api';
 
 interface ScanResult {
   disease: string;
@@ -23,24 +24,22 @@ const Home = () => {
   const [loading, setLoading] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [results, setResults] = useState<ScanResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleImageUpload = async (imageData: string) => {
     setLoading(true);
+    setError(null);
     try {
-      // TODO: Implement API call to backend
-      // Mock response for now
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setResults({
-        disease: "Sample Condition",
-        confidence: 0.89,
-        recommendations: [
-          "Consult a dermatologist",
-          "Keep the area clean and dry",
-          "Avoid direct sunlight"
-        ]
-      });
+      const response = await fetch(imageData);
+      const blob = await response.blob();
+      const file = new File([blob], "image.jpg", { type: "image/jpeg" });
+      
+      const result = await uploadImage(file);
+      setResults(result);
     } catch (error) {
       console.error('Error analyzing image:', error);
+      setError('Failed to analyze image. Please try again.');
+      setResults(null);
     } finally {
       setLoading(false);
     }
@@ -86,6 +85,12 @@ const Home = () => {
 
             {results && !loading && (
               <ResultsDisplay results={results} />
+            )}
+
+            {error && (
+              <Box sx={{ mt: 2, textAlign: 'center' }}>
+                <Typography color="error">{error}</Typography>
+              </Box>
             )}
           </CardContent>
         </Card>
